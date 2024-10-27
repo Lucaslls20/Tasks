@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
-import { Switch, List, Divider, Text, IconButton } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { Switch, List, Divider, Text, IconButton, Snackbar } from "react-native-paper";
 import LinearGradient from "react-native-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import PushNotification from "react-native-push-notification";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AppSettings = () => {
   const navigation = useNavigation();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   useEffect(() => {
     const fetchNotificationPreference = async () => {
@@ -19,19 +20,29 @@ const AppSettings = () => {
     fetchNotificationPreference();
   }, []);
 
+  useEffect(() => {
+    let notificationInterval;
+
+    if (notificationsEnabled) {
+      // Define o intervalo para exibir uma "notificação" a cada 10 segundos, por exemplo
+      notificationInterval = setTimeout(() => {
+        setSnackbarMessage("Lembrete: Confira as novidades no app!");
+        setSnackbarVisible(true);
+      }, 4000); // 10000 ms = 10 segundos
+    }
+
+    return () => clearInterval(notificationInterval); // Limpa o intervalo quando as notificações são desativadas
+  }, [notificationsEnabled]);
+
   const toggleNotifications = async () => {
     const newPreference = !notificationsEnabled;
     setNotificationsEnabled(newPreference);
     await AsyncStorage.setItem("notificationsEnabled", newPreference.toString());
 
-    if (newPreference) {
-      PushNotification.localNotification({
-        title: "Notificações Ativadas",
-        message: "Você ativou as notificações do aplicativo.",
-      });
-    } else {
-      PushNotification.cancelAllLocalNotifications();
-    }
+    setSnackbarMessage(
+      newPreference ? "Notificações ativadas" : "Notificações desativadas"
+    );
+    setSnackbarVisible(true);
   };
 
   return (
@@ -82,6 +93,14 @@ const AppSettings = () => {
           onPress={() => navigation.navigate("Terms")}
         />
       </List.Section>
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </LinearGradient>
   );
 };
