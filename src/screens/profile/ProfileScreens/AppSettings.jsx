@@ -1,83 +1,85 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Switch, List, Divider, Text, IconButton } from 'react-native-paper';
-import { LinearGradient } from 'react-native-linear-gradient'; // Gradiente de fundo
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet } from "react-native";
+import { Switch, List, Divider, Text, IconButton } from "react-native-paper";
+import LinearGradient from "react-native-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import PushNotification from "react-native-push-notification";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AppSettings = () => {
   const navigation = useNavigation();
-  const [isDarkTheme, setIsDarkTheme] = useState(false); // Estado para tema escuro
-  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true); // Estado para notificações
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  // Função para alternar o tema
-  const toggleTheme = () => {
-    setIsDarkTheme(!isDarkTheme);
-    // Lógica adicional pode ser implementada para mudar o tema global
-  };
+  useEffect(() => {
+    const fetchNotificationPreference = async () => {
+      const savedPreference = await AsyncStorage.getItem("notificationsEnabled");
+      setNotificationsEnabled(savedPreference === "true");
+    };
 
-  // Função para ativar/desativar notificações
-  const toggleNotifications = () => {
-    setIsNotificationsEnabled(!isNotificationsEnabled);
+    fetchNotificationPreference();
+  }, []);
+
+  const toggleNotifications = async () => {
+    const newPreference = !notificationsEnabled;
+    setNotificationsEnabled(newPreference);
+    await AsyncStorage.setItem("notificationsEnabled", newPreference.toString());
+
+    if (newPreference) {
+      PushNotification.localNotification({
+        title: "Notificações Ativadas",
+        message: "Você ativou as notificações do aplicativo.",
+      });
+    } else {
+      PushNotification.cancelAllLocalNotifications();
+    }
   };
 
   return (
     <LinearGradient
-      colors={['#81E0DD', '#FAFAFA', '#F5F5F5', '#fff']} // Mesmas cores do perfil
+      colors={["#81E0DD", "#FAFAFA", "#F5F5F5", "#fff"]}
       style={styles.container}
     >
-      <IconButton 
-        icon="arrow-left" 
-        size={30} 
-        onPress={() => navigation.goBack()} 
+      <IconButton
+        icon="arrow-left"
+        size={30}
+        onPress={() => navigation.goBack()}
         style={styles.backIcon}
-        color="#000" // Ícone de volta para combinar com o tema
+        color="#000000"
       />
-      
       <Text style={styles.header}>App Settings</Text>
 
       <List.Section>
         <List.Item
-         titleStyle={{color:'#666'}}
-          title="Dark Theme"
-          description="Enable dark theme for the app"
-          left={() => <List.Icon icon="theme-light-dark" color="#000" />}
-          right={() => (
-            <Switch 
-              value={isDarkTheme} 
-              onValueChange={toggleTheme} 
-              color="#81E0DD" // Cor do switch para combinar
-            />
-          )}
-        />
-        <Divider />
-        <List.Item
-        titleStyle={{color:'#666'}}
           title="Notifications"
           description="Enable notifications"
-          left={() => <List.Icon icon="bell" color="#000" />}
+          titleStyle={{ color: "#000000" }}
+          descriptionStyle={{ color: "#000000" }}
+          left={() => <List.Icon icon="bell" color="#000000" />}
           right={() => (
-            <Switch 
-              value={isNotificationsEnabled} 
-              onValueChange={toggleNotifications} 
-              color="#81E0DD" // Cor do switch para combinar
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={toggleNotifications}
+              color="#81E0DD"
             />
           )}
         />
         <Divider />
         <List.Item
-        titleStyle={{color:'#666'}}
           title="Privacy Policy"
           description="View privacy policy"
-          left={() => <List.Icon icon="shield-lock" color="#000" />}
-          onPress={() => navigation.navigate('Privacy')}
+          titleStyle={{ color: "#000000" }}
+          descriptionStyle={{ color: "#000000" }}
+          left={() => <List.Icon icon="shield-lock" color="#000000" />}
+          onPress={() => navigation.navigate("Privacy")}
         />
         <Divider />
         <List.Item
-        titleStyle={{color:'#666'}}
           title="Terms and Conditions"
           description="View terms and conditions"
-          left={() => <List.Icon icon="file-document-outline" color="#000" />}
-          onPress={() => navigation.navigate('Terms')}
+          titleStyle={{ color: "#000000" }}
+          descriptionStyle={{ color: "#000000" }}
+          left={() => <List.Icon icon="file-document-outline" color="#000000" />}
+          onPress={() => navigation.navigate("Terms")}
         />
       </List.Section>
     </LinearGradient>
@@ -92,13 +94,12 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 20,
   },
   backIcon: {
-    position: 'absolute',
+    position: "absolute",
     top: 20,
     left: 10,
   },
